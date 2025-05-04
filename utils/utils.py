@@ -2,10 +2,10 @@ import csv
 import random
 
 dir = "./data/"
-def load_file():
-    csv_file = "quotes.csv"
-    
+def load_file(csv_file):
+    print(csv_file)
+
     with open(dir+csv_file, "r") as file:
         csv_reader = csv.DictReader(file)
-        rows = [row['quotes'] for row in csv_reader]
-        return random.choice(rows)
+        rows = [row for row in csv_reader]
+        return rows

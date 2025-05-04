@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from utils import utils
 from discord import Intents
+import random
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -14,51 +15,41 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"Bot aktif sebagai {bot.user.name}")
+    print(f"Active bot as {bot.user.name}")
 
-@bot.command(name="ping")
-async def hello(ctx):
-    await ctx.send("Pong!")
+rows = utils.load_file("cmd.csv")
 
-@bot.command(name="landofdawn")
-async def mobile_legends_team(ctx):
+for row in rows:
+    cmd = row["key"]
+    response = row["value"]
 
-    users = [
-        "585964449685569557",
-        "732407057084317719",
-        "220589035557486592",
-        "403552045677674517",
-        "349509405970137108",
-        "229949010318721024"
-    ]
+    if cmd == "landofdawn":
+        @bot.command(name=cmd)
+        async def _(ctx):
+            users = [
+                ""
+            ]
 
-    mentions = " ".join([f"<@{user}>" for user in users])
-    await ctx.send(f"{mentions}, ayo mabar!")
+            mentions = " ".join([f"<@{user}>" for user in users])
+            await ctx.send(f"{mentions}, ayo mabar!")
+    elif cmd == "kata-kata":
+        
+        quotes = utils.load_file("quotes.csv")
+        used_quotes = []
 
+        @bot.command(name=cmd)
+        async def _(ctx): 
+            available_quotes = [quote for quote in quotes if quote not in used_quotes]
+            if not available_quotes:
+                used_quotes.clear()
+                available_quotes = quotes
 
-@bot.command(name="indonesia")
-async def indonesian(ctx):
-    await ctx.send("Indonesia besar, Indonesia kuat, Indonesia cerah")
-    
-@bot.command(name="pelayan")
-async def _(ctx): await ctx.send("Siap, tuan!")
-    
-@bot.command(name="kata-kata")
-async def _(ctx): await ctx.send(utils.load_file())
+            choice_quotes = random.choice(quotes)
+            used_quotes.append(choice_quotes)
 
-# async def main():
-#     # load all file command from folder "cmd"
-#     for filename in os.listdir("./cmd"):
-#         if filename.endswith(".py") and filename != "__init__.py":
-#             try:
-#                 await bot.load_extension(f"cmd.{filename[:-3]}")
-#                 print(f"Memuat extension {filename[:-3]}")
-#             except Exception as e:
-#                 print(f"Gagal memuat extension {filename[:-3]}: {e}")
-
-# @bot.event
-# async def on_ready():
-#     print(f"Bot aktif sebagai {bot.user.name}")
-#     main()
+            await ctx.send(choice_quotes['quotes'])
+    else:
+        @bot.command(name=cmd)
+        async def _(ctx, response=response): await ctx.send(response)
 
 bot.run(TOKEN)
