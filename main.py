@@ -1,6 +1,7 @@
 from discord.ext import commands
 import os
 from dotenv import load_dotenv
+from utils import utils
 from discord import Intents
 
 load_dotenv()
@@ -23,7 +24,12 @@ async def hello(ctx):
 async def mobile_legends_team(ctx):
 
     users = [
-        ""
+        "585964449685569557",
+        "732407057084317719",
+        "220589035557486592",
+        "403552045677674517",
+        "349509405970137108",
+        "229949010318721024"
     ]
 
     mentions = " ".join([f"<@{user}>" for user in users])
@@ -33,6 +39,12 @@ async def mobile_legends_team(ctx):
 @bot.command(name="indonesia")
 async def indonesian(ctx):
     await ctx.send("Indonesia besar, Indonesia kuat, Indonesia cerah")
+    
+@bot.command(name="pelayan")
+async def _(ctx): await ctx.send("Siap, tuan!")
+    
+@bot.command(name="kata-kata")
+async def _(ctx): await ctx.send(utils.load_file())
 
 # async def main():
 #     # load all file command from folder "cmd"
@@ -44,5 +56,9 @@ async def indonesian(ctx):
 #             except Exception as e:
 #                 print(f"Gagal memuat extension {filename[:-3]}: {e}")
 
-bot.run(TOKEN)
+# @bot.event
+# async def on_ready():
+#     print(f"Bot aktif sebagai {bot.user.name}")
+#     main()
 
+bot.run(TOKEN)
