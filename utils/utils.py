@@ -1,5 +1,4 @@
 import csv
-import random
 
 dir = "./data/"
 def load_file(csv_file):
