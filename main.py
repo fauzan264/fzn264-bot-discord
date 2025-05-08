@@ -1,12 +1,11 @@
 from discord.ext import commands
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from discord import Intents
 import os
 from dotenv import load_dotenv
-from utils import utils
-from utils.logger import setup_logger
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from scheduler.jobs import setup_scheduler
-from discord import Intents
-import random
+from command.register import register_all_commands
+from utils.logger import setup_logger
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -20,50 +19,12 @@ intents = Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-rows = utils.load_file("cmd.csv")
-
-used_quotes = []
-for row in rows:
-    cmd = row["key"]
-    response = row["value"]
-
-    if cmd == "landofdawn":
-        @bot.command(name=cmd)
-        async def _(ctx):
-            users = [
-                "585964449685569557",
-                "732407057084317719",
-                "220589035557486592",
-                "403552045677674517",
-                "349509405970137108",
-                "229949010318721024"
-            ]
-
-            mentions = " ".join([f"<@{user}>" for user in users])
-            await ctx.send(f"{mentions}, ayo mabar!")
-    elif cmd == "kata-kata":
-        
-        quotes = utils.load_file("quotes.csv")
-
-        @bot.command(name=cmd)
-        async def _(ctx): 
-            available_quotes = [quote for quote in quotes if quote not in used_quotes]
-            if not available_quotes:
-                used_quotes.clear()
-                available_quotes = quotes
-
-            choice_quotes = random.choice(quotes)
-            used_quotes.append(choice_quotes)
-
-            await ctx.send(choice_quotes['quotes'])
-    else:
-        @bot.command(name=cmd)
-        async def _(ctx, response=response): await ctx.send(response)
-
 @bot.event
 async def on_ready():
     logger.info(f"Active bot as {bot.user.name}")
     setup_scheduler(bot, scheduler, logger)
     scheduler.start()
+
+register_all_commands(bot, logger)
 
 bot.run(TOKEN)
