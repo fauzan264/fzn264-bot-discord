@@ -4,82 +4,77 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
-import time
+import requests
+from bs4 import BeautifulSoup
+import asyncio
 
 job_schedulers = [
     {
         "hour": 9,
-        "minute": 00
+        "minute": 0
     },
     {
-        "hour": 15,
-        "minute": 00
+        "hour": 13,
+        "minute": 0
     },
     {
-        "hour": 17,
-        "minute": 40
+        "hour": 16,
+        "minute": 0
+    },
+    {
+        "hour": 20,
+        "minute": 0
     },
 ]
 
 def jobstreet_scheduler(bot, scheduler, logger, channel_id, position, city):
     async def get_jobs(channel_id):
-        # Setup headless browser
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-
-        logger.info("Opening JobStreet page")
         position_job = position.lower().replace(" ", "-")
         city_job = city.lower().replace(" ", "-")
-        driver.get(f"https://id.jobstreet.com/id/{position_job}-jobs/in-{city_job}")
+        response = requests.get(f"https://id.jobstreet.com/id/{position_job}-jobs/in-{city_job}", "html")
+        if response.status_code == 200:
+            html = response.text
+            soup = BeautifulSoup(html, "html.parser")
+            
+            positions = soup.select("a[data-testid='job-card-title']")
+            companies = soup.select("a[data-automation='jobCompany']")
 
-        time.sleep(2)
+            if not positions or not companies:
+                logger.warning("No job data found!")
+            else:
+                try:
+                    channel = await bot.fetch_channel(channel_id)
 
-        positions = driver.find_elements(By.CSS_SELECTOR, "a[data-testid='job-card-title']")
-        companies = driver.find_elements(By.CSS_SELECTOR, "a[data-automation='jobCompany']")
+                    job_count = min(len(positions), len(companies))
+                    print(job_count)
+                    fields_per_embed = 10
 
-        logger.info(f"Found {len(positions)} positions and {len(companies)} companies")
+                    for batch in range(0, job_count, fields_per_embed):
+                        embed = Embed(
+                            title=f"📢 Info Lowongan {position} di {city}",
+                            description=f"Lowongan {position} di {city} #{batch + 1} - #{min(batch + fields_per_embed, job_count)}",
+                            color=0x3498db
+                        )
 
-        if not positions or not companies:
-            logger.warning("No job data found!")
-            driver.quit()
-            return
+                        for i in range(batch, min(batch + fields_per_embed, job_count)):
+                            title = positions[i].get_text(strip=True)
+                            company = companies[i].get_text(strip=True)
+                            url = f"https://id.jobstreet.com{positions[i].get("href")}"
 
-        try:
-            channel = await bot.fetch_channel(channel_id)
-            if not channel:
-                logger.warning("Channel not found")
-                driver.quit()
-                return
+                            embed.add_field(
+                                name=f"{title} - {company}",
+                                value=f"[Lihat detail]({url})"[:1024],
+                                inline=False
+                            )
 
-            jobs_count = min(len(positions), len(companies))
-            fields_per_embed = 10
-
-            for batch in range(0, jobs_count, fields_per_embed):
-                embed = Embed(
-                    title=f"📢 Info Lowongan {position} di {city}",
-                    description=f"Lowongan {position} di {city} #{batch + 1} - #{min(batch + fields_per_embed, jobs_count)}",
-                    color=0x3498db
-                )
-
-                for i in range(batch, min(batch + fields_per_embed, jobs_count)):
-                    title = positions[i].text[:256]
-                    company = companies[i].text[:256]
-                    url = positions[i].get_attribute('href')
-                    embed.add_field(
-                        name=f"{title} - {company}",
-                        value=f"[Lihat detail]({url})"[:1024],
-                        inline=False
-                    )
-
-                await channel.send(embed=embed)
-                logger.info(f"Sent embed batch {batch // fields_per_embed + 1}")
-
-        except Exception as e:
-            logger.error(f"Failed to send embed: {e}")
-
-        driver.quit()
+                        await channel.send(embed=embed)
+                        logger.info(f"Sent embed batch {batch // fields_per_embed + 1}")
+                except Exception as e:
+                    logger.error(f"Failed to send embed: {e}")
+        else:
+            print(f"Failed get page: {response.status_code}")
+        await asyncio.sleep(120)
+    
 
     for job_scheduler in job_schedulers:
         logger.info(f"Scheduling daily jobstreet message")

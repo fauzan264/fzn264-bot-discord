@@ -7,7 +7,6 @@ from scheduler.jobs import setup_scheduler
 from scraping.jobstreet import jobstreet_scheduler
 from command.register import register_all_commands
 from utils.logger import setup_logger
-import time
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -16,14 +15,9 @@ GTL_CHANNEL_JOBS = os.getenv("GTL_CHANNEL_JOBS")
 
 jobs = [
     "Application Support",
-    "Javascript",
     "Support Engineer",
     "Web Developer",
-    "Technical Support",
     "Backend Developer",
-    "Data Analyst",
-    "Golang",
-    "PHP"
 ]
 
 cities = [
